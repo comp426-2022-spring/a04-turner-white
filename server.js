@@ -1,12 +1,14 @@
-import { coinFlip,coinFlips,countFlips,flipACoin } from "./modules/coin.mjs";
-
-import minimist from 'minimist';
-import express from 'express';
+//Import Things
+const minimist = require('minimist');
+const express = require('express');
+const morgan = require('morgan');
+const db = require('db');
+const fs = require('fs');
 
 const app = express()
 
-var argv = minimist(process.argv.slice(2))
-console.log(argv)
+var args = minimist(process.argv.slice(2))
+console.log(args)
 
 //HELP
 const help = (`
@@ -31,12 +33,79 @@ if (args.help || args.h) {
     process.exit(0)
 }
 
-var allowedName = 'port'
-const HTTP_PORT = argv[allowedName] || 5000
+const HTTP_PORT = args.port || env.po || 5555
 
 const server = app.listen(HTTP_PORT, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%',HTTP_PORT))
 })
+// Use morgan for logging to files
+// Create a write stream to append (flags: 'a') to a file
+const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
+
+// Set up the access logging middleware
+app.use(morgan('combined', { stream: accessLog }))
+
+app.use( (req, res, next) => {
+    // Your middleware goes here.
+    let logdata = {
+        remoteaddr: req.ip,
+        remoteuser: req.user,
+        time: Date.now(),
+        method: req.method,
+        url: req.url,
+        protocol: req.protocol,
+        httpversion: req.httpVersion,
+        status: res.statusCode,
+        referer: req.headers["referer"],
+        useragent: req.headers["user-agent"]
+    };
+    const stmt = dp.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?)')
+    const info = stmt.run(logdata.remoteaddr,logdata.remoteuser,logdata.time,logdata.method,logdata.url,logdata.protocol,logdata.httpversion,logdata.status, logdata.referer, logdata.useragent)
+
+    next()
+    })
+
+//Functions
+function coinFlip() {
+    return (Math.random() > 0.5) ? "heads" : "tails"
+}
+function coinFlips(flips) {
+    let ret = []
+    for (var i=0; i < flips; i++) {
+      ret.push(coinFlip())
+    }
+    return ret
+}
+function countFlips(array) {
+    var tailcount = 0
+    var headcount = 0
+    for (let i=0; i<array.length; i++) {
+      if (array[i] == "heads") {
+        headcount += 1;
+      }
+      if (array[i] == "tails") {
+        tailcount += 1;
+      }
+    }
+    if (tailcount == 0) {
+      return {heads:headcount}
+    }
+    if (headcount == 0) {
+      return {tails:tailcount}
+    }
+    return { tails: tailcount, heads: headcount}
+}
+function flipACoin(call) {
+     var flip = coinFlip()
+     var res = ""
+    if (flip == call) {
+      var res = 'win'
+    }
+    if (flip != call) {
+      var res = 'lose'
+    }
+    return {call: call, flip: flip, result: res}
+}
 
 //Check status code endpoint
 app.get('/app/', (req,res) => {
@@ -45,6 +114,7 @@ app.get('/app/', (req,res) => {
     res.writeHead(res.statusCode, {'Content-Type' : 'text/plain' });
     res.end(res.statusCode+ ' ' + res.statusMessage)
 });
+
 //Endpoint that returns JSON of flip function result
 app.get('/app/flip/', (req,res) => {
     res.statusCode = 200;
@@ -82,3 +152,48 @@ app.get('/app/flip/call/tails', (req, res) => {
 app.use(function(req,res){
     res.status(404).send('404 NOT FOUND')
 })
+
+//Functions
+function coinFlip() {
+    return (Math.random() > 0.5) ? "heads" : "tails"
+  }
+
+function coinFlips(flips) {
+    let ret = []
+    for (var i=0; i < flips; i++) {
+      ret.push(coinFlip())
+    }
+    return ret
+  }
+  
+function countFlips(array) {
+    var tailcount = 0
+    var headcount = 0
+    for (let i=0; i<array.length; i++) {
+      if (array[i] == "heads") {
+        headcount += 1;
+      }
+      if (array[i] == "tails") {
+        tailcount += 1;
+      }
+    }
+    if (tailcount == 0) {
+      return {heads:headcount}
+    }
+    if (headcount == 0) {
+      return {tails:tailcount}
+    }
+    return { tails: tailcount, heads: headcount}
+  }
+  
+function flipACoin(call) {
+     var flip = coinFlip()
+     var res = ""
+    if (flip == call) {
+      var res = 'win'
+    }
+    if (flip != call) {
+      var res = 'lose'
+    }
+    return {call: call, flip: flip, result: res}
+  }
