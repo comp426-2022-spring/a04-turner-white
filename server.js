@@ -33,17 +33,17 @@ if (args.help || args.h) {
     process.exit(0)
 }
 
-const HTTP_PORT = args.port || env.po || 5555
+const HTTP_PORT = args.port || process.env.PORT || 5555
 
 const server = app.listen(HTTP_PORT, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%',HTTP_PORT))
 })
 // Use morgan for logging to files
 // Create a write stream to append (flags: 'a') to a file
-const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
-
-// Set up the access logging middleware
-app.use(morgan('combined', { stream: accessLog }))
+if (args.log == true) {
+    const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
+    app.use(morgan('combined', { stream: accessLog }))
+}
 
 app.use( (req, res, next) => {
     // Your middleware goes here.
@@ -148,52 +148,21 @@ app.get('/app/flip/call/tails', (req, res) => {
     res.send(result)
     res.writeHead(res.statusCode, {'Content-Type' : 'text/plain' });
 })
+//If Debugs
+if (args.debug) {
+    app.get('/app/log/access', (req, res) => {
+        const stmt = db.prepare("SELECT * FROM accesslog").all()
+        res.statusCode = 200;
+        res.json(stmt)
+    });
+}
 
 app.use(function(req,res){
     res.status(404).send('404 NOT FOUND')
+});
+
+process.on('SIGTERM', () => {
+    server.close(() => {
+        console.log('Server terminated')
+    })
 })
-
-//Functions
-function coinFlip() {
-    return (Math.random() > 0.5) ? "heads" : "tails"
-  }
-
-function coinFlips(flips) {
-    let ret = []
-    for (var i=0; i < flips; i++) {
-      ret.push(coinFlip())
-    }
-    return ret
-  }
-  
-function countFlips(array) {
-    var tailcount = 0
-    var headcount = 0
-    for (let i=0; i<array.length; i++) {
-      if (array[i] == "heads") {
-        headcount += 1;
-      }
-      if (array[i] == "tails") {
-        tailcount += 1;
-      }
-    }
-    if (tailcount == 0) {
-      return {heads:headcount}
-    }
-    if (headcount == 0) {
-      return {tails:tailcount}
-    }
-    return { tails: tailcount, heads: headcount}
-  }
-  
-function flipACoin(call) {
-     var flip = coinFlip()
-     var res = ""
-    if (flip == call) {
-      var res = 'win'
-    }
-    if (flip != call) {
-      var res = 'lose'
-    }
-    return {call: call, flip: flip, result: res}
-  }
