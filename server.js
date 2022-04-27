@@ -40,31 +40,31 @@ const server = app.listen(HTTP_PORT, () => {
 })
 // Use morgan for logging to files
 // Create a write stream to append (flags: 'a') to a file
-if (args.log == true || args.log == null) {
+if (args.log == "true" || args.log == null) {
     const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
     app.use(morgan('combined', { stream: accessLog }))
 }
+if (args.log == "true" || args.log == null) {
+    app.use( (req, res, next) => {
+        // Your middleware goes here.
+        let logdata = {
+            remoteaddr: req.ip,
+            remoteuser: req.user,
+            time: Date.now(),
+            method: req.method,
+            url: req.url,
+            protocol: req.protocol,
+            httpversion: req.httpVersion,
+            status: res.statusCode,
+            referer: req.headers["referer"],
+            useragent: req.headers["user-agent"]
+        };
+        const stmt = dp.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?)')
+        const info = stmt.run(logdata.remoteaddr,logdata.remoteuser,logdata.time,logdata.method,logdata.url,logdata.protocol,logdata.httpversion,logdata.status, logdata.referer, logdata.useragent)
 
-app.use( (req, res, next) => {
-    // Your middleware goes here.
-    let logdata = {
-        remoteaddr: req.ip,
-        remoteuser: req.user,
-        time: Date.now(),
-        method: req.method,
-        url: req.url,
-        protocol: req.protocol,
-        httpversion: req.httpVersion,
-        status: res.statusCode,
-        referer: req.headers["referer"],
-        useragent: req.headers["user-agent"]
-    };
-    const stmt = dp.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?)')
-    const info = stmt.run(logdata.remoteaddr,logdata.remoteuser,logdata.time,logdata.method,logdata.url,logdata.protocol,logdata.httpversion,logdata.status, logdata.referer, logdata.useragent)
-
-    next()
+        next()
     })
-
+}
 //Functions
 function coinFlip() {
     return (Math.random() > 0.5) ? "heads" : "tails"
