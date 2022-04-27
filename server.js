@@ -149,15 +149,16 @@ app.get('/app/flip/call/tails', (req, res) => {
     res.send(result)
     res.writeHead(res.statusCode, {'Content-Type' : 'text/plain' });
 })
-app.get('app/error', (req, res) => {
-    throw new Error('Error test successful') // Express will catch this on its own.
-})
+
 //If Debugs
 if (args.debug) {
     app.get('/app/log/access', (req, res) => {
         const stmt = db.prepare("SELECT * FROM accesslog").all()
         res.statusCode = 200;
         res.json(stmt)
+    });
+    app.get('app/error', (req, res) => {
+        throw new Error('Error test successful') // Express will catch this on its own.
     });
 }
 
