@@ -4,6 +4,7 @@ const express = require('express');
 const morgan = require('morgan');
 const db = require('./database.js');
 const fs = require('fs');
+const req = require('express/lib/request');
 
 const app = express()
 
@@ -147,6 +148,9 @@ app.get('/app/flip/call/tails', (req, res) => {
     let result = flipACoin('tails')
     res.send(result)
     res.writeHead(res.statusCode, {'Content-Type' : 'text/plain' });
+})
+app.get('app/error', (req, res) => {
+    throw new Error('Error test successful') // Express will catch this on its own.
 })
 //If Debugs
 if (args.debug) {
