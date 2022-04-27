@@ -40,7 +40,7 @@ const server = app.listen(HTTP_PORT, () => {
 })
 // Use morgan for logging to files
 // Create a write stream to append (flags: 'a') to a file
-if (args.log == true) {
+if (args.log == true || args.log == null) {
     const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
     app.use(morgan('combined', { stream: accessLog }))
 }
