@@ -155,7 +155,7 @@ app.get('/app/flip/call/tails', (req, res) => {
 })
 
 //If Debugs
-if (args.debug == "true") {
+if (args['debug'] == "true") {
     app.get('/app/log/access', (req, res) => {
         try {
             const stmt = db.prepare('SELECT * FROM accesslog').all()
