@@ -151,7 +151,7 @@ app.get('/app/flip/call/tails', (req, res) => {
 })
 
 //If Debugs
-if (args.debug) {
+if (args.debug == "true") {
     app.get('/app/log/access', (req, res) => {
         const stmt = db.prepare("SELECT * FROM accesslog").all()
         res.statusCode = 200;
