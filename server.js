@@ -163,7 +163,7 @@ if (args.debug) {
 }
 
 app.use(function(req,res){
-    res.status(404).send('404 NOT FOUND')
+    res.status(404).send('Internal Server Error')
 });
 
 process.on('SIGTERM', () => {
