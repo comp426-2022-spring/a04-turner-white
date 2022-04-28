@@ -155,7 +155,7 @@ app.get('/app/flip/call/tails', (req, res) => {
 })
 
 //If Debugs
-if (args['debug'] == "true") {
+if (args['debug'] == "true" || args['debug'] == true) {
     app.get('/app/log/access', (req, res) => {
         try {
             const stmt = db.prepare('SELECT * FROM accesslog').all()
@@ -171,7 +171,7 @@ if (args['debug'] == "true") {
 }
 
 app.use(function(req,res){
-    res.status(404).json({"message":"Internal Server Error"})
+    res.status(404).json({"message":"404 NOT FOUND"})
 });
 
 process.on('SIGTERM', () => {
