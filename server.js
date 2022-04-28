@@ -35,16 +35,16 @@ if (args.help || args.h) {
 }
 
 const HTTP_PORT = args.port || process.env.PORT || 5555
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 
 const server = app.listen(HTTP_PORT, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%',HTTP_PORT))
 })
 // Use morgan for logging to files
 // Create a write stream to append (flags: 'a') to a file
-if (args.log == "true" || args.log == null) {
-    const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
-    app.use(morgan('combined', { stream: accessLog }))
-}
+
+
 if (args.log == "true" || args.log == null) {
     app.use( (req, res, next) => {
         // Your middleware goes here.
@@ -65,6 +65,10 @@ if (args.log == "true" || args.log == null) {
 
         next()
     })
+}
+if (args.log == "true" || args.log == null) {
+    const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
+    app.use(morgan('combined', { stream: accessLog }))
 }
 //Functions
 function coinFlip() {
@@ -153,9 +157,13 @@ app.get('/app/flip/call/tails', (req, res) => {
 //If Debugs
 if (args.debug == "true") {
     app.get('/app/log/access', (req, res) => {
-        const stmt = db.prepare("SELECT * FROM accesslog").all()
-        res.statusCode = 200;
-        res.json(stmt)
+        try {
+            const stmt = db.prepare('SELECT * FROM accesslog').all()
+            res.status(200);
+            res.json(stmt)
+        } catch {
+            console.error(e)
+        }
     });
     app.get('app/error', (req, res) => {
         throw new Error('Error test successful') // Express will catch this on its own.
@@ -163,7 +171,7 @@ if (args.debug == "true") {
 }
 
 app.use(function(req,res){
-    res.status(404).send('Internal Server Error')
+    res.status(404).json({"message":"Internal Server Error"})
 });
 
 process.on('SIGTERM', () => {
