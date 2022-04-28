@@ -165,7 +165,7 @@ if (args['debug'] == "true" || args['debug'] == true) {
             console.error(e)
         }
     });
-    app.get('app/error', (req, res) => {
+    app.get('/app/error', (req, res) => {
         throw new Error('Error test successful') // Express will catch this on its own.
     });
 }
