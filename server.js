@@ -2,8 +2,9 @@
 const minimist = require('minimist');
 const express = require('express');
 const morgan = require('morgan');
-const db = require('db');
+const db = require('./database.js');
 const fs = require('fs');
+const req = require('express/lib/request');
 
 const app = express()
 
@@ -34,37 +35,41 @@ if (args.help || args.h) {
 }
 
 const HTTP_PORT = args.port || process.env.PORT || 5555
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 
 const server = app.listen(HTTP_PORT, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%',HTTP_PORT))
 })
 // Use morgan for logging to files
 // Create a write stream to append (flags: 'a') to a file
-if (args.log == true) {
+
+
+if (args.log == "true" || args.log == null) {
+    app.use( (req, res, next) => {
+        // Your middleware goes here.
+        let logdata = {
+            remoteaddr: req.ip,
+            remoteuser: req.user,
+            time: Date.now(),
+            method: req.method,
+            url: req.url,
+            protocol: req.protocol,
+            httpversion: req.httpVersion,
+            status: res.statusCode,
+            referer: req.headers["referer"],
+            useragent: req.headers["user-agent"]
+        };
+        const stmt = db.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?)')
+        const info = stmt.run(logdata.remoteaddr,logdata.remoteuser,logdata.time,logdata.method,logdata.url,logdata.protocol,logdata.httpversion,logdata.status, logdata.referer, logdata.useragent)
+
+        next()
+    })
+}
+if (args.log == "true" || args.log == null) {
     const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
     app.use(morgan('combined', { stream: accessLog }))
 }
-
-app.use( (req, res, next) => {
-    // Your middleware goes here.
-    let logdata = {
-        remoteaddr: req.ip,
-        remoteuser: req.user,
-        time: Date.now(),
-        method: req.method,
-        url: req.url,
-        protocol: req.protocol,
-        httpversion: req.httpVersion,
-        status: res.statusCode,
-        referer: req.headers["referer"],
-        useragent: req.headers["user-agent"]
-    };
-    const stmt = dp.prepare('INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, protocol, httpversion, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?)')
-    const info = stmt.run(logdata.remoteaddr,logdata.remoteuser,logdata.time,logdata.method,logdata.url,logdata.protocol,logdata.httpversion,logdata.status, logdata.referer, logdata.useragent)
-
-    next()
-    })
-
 //Functions
 function coinFlip() {
     return (Math.random() > 0.5) ? "heads" : "tails"
@@ -148,17 +153,25 @@ app.get('/app/flip/call/tails', (req, res) => {
     res.send(result)
     res.writeHead(res.statusCode, {'Content-Type' : 'text/plain' });
 })
+
 //If Debugs
-if (args.debug) {
+if (args['debug'] == "true" || args['debug'] == true) {
     app.get('/app/log/access', (req, res) => {
-        const stmt = db.prepare("SELECT * FROM accesslog").all()
-        res.statusCode = 200;
-        res.json(stmt)
+        try {
+            const stmt = db.prepare('SELECT * FROM accesslog').all()
+            res.status(200);
+            res.json(stmt)
+        } catch {
+            console.error(e)
+        }
+    });
+    app.get('/app/error', (req, res) => {
+        throw new Error('Error test successful') // Express will catch this on its own.
     });
 }
 
 app.use(function(req,res){
-    res.status(404).send('404 NOT FOUND')
+    res.status(404).json({"message":"404 NOT FOUND"})
 });
 
 process.on('SIGTERM', () => {
